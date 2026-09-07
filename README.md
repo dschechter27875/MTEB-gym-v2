@@ -20,7 +20,7 @@ pip install "mteb-gym @ git+https://github.com/embeddings-benchmark/MTEB-gym-v2"
 
 ## Quickstart
 
-A dry run first. The mock judge answers deterministically, so this only checks that everything is installed. It does not rank models and takes about a minute on a CPU, with no API key and no GPU.
+The mock judge needs no API key or GPU. It answers deterministically, so this checks the install and does not rank models. About a minute on a CPU.
 
 ```python
 import mteb_gym as gym
@@ -35,7 +35,7 @@ result = gym.run(
 print(result.leaderboard)
 ```
 
-A real run. The judge and the generator are LLMs; `gym.LLM(model)` uses OpenAI, and the next section shows every other server it can talk to.
+With `OPENAI_API_KEY` set, `gym.LLM(model)` uses OpenAI. Other servers are in the next section.
 
 ```bash
 export OPENAI_API_KEY=<your_api_key>
@@ -71,7 +71,7 @@ mteb-gym --corpus NFCorpus \
 gym.LLM("<model>", base_url="<provider url>", api_key="<key>")
 ```
 
-To serve an open model yourself, with no key, start it with one of these.
+To serve an open model yourself, no key needed, start it with one of these.
 
 vLLM:
 
@@ -90,16 +90,6 @@ transformers:
 ```bash
 pip install "transformers[serving]"
 transformers serve --force-model Qwen/Qwen3-4B-Instruct-2507 --port 8000
-```
-
-Ollama, which uses its own model names and port:
-
-```bash
-ollama pull qwen3:4b
-```
-
-```python
-llm = gym.LLM("qwen3:4b", base_url="http://localhost:11434/v1")
 ```
 
 Then point `gym.LLM` at the server. One model can be both judge and generator.
