@@ -51,9 +51,9 @@ class LLM:
         key = api_key or os.environ.get("OPENAI_API_KEY")
         if base_url is None and key is None and not os.environ.get("OPENAI_BASE_URL"):
             raise ValueError(
-                f"gym.LLM({model!r}): no API key and no base_url. An LLM is an endpoint, not a download: "
-                "set OPENAI_API_KEY for OpenAI, pass base_url and api_key for another provider, or serve the "
-                f"model yourself (`vllm serve {model}`) and pass base_url='http://localhost:8000/v1'."
+                f"gym.LLM({model!r}): no API key and no base_url. Set OPENAI_API_KEY for OpenAI, pass base_url "
+                f"and api_key for another provider, or serve the model yourself (`vllm serve {model}`) and pass "
+                "base_url='http://localhost:8000/v1'."
             )
         # The SDK retries connection errors, timeouts, 429 and 5xx with backoff. Anything else
         # (bad key, unknown model) raises at once. timeout: a hung call would otherwise stall a worker forever.
