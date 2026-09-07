@@ -6,8 +6,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import re
+
+logger = logging.getLogger(__name__)
 
 
 class MockLLM:
@@ -56,13 +59,24 @@ class LLM:
         self.model = model
         self.max_tokens = max_tokens
         self.extra_body = extra_body  # server knobs, e.g. {"chat_template_kwargs": {"enable_thinking": False}}
+        self._rejected: set[str] = set()  # sampling parameters this model refused
 
     def chat(self, messages: list[dict], temperature: float = 0.0) -> str:
-        resp = self.client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            temperature=temperature,
-            max_tokens=self.max_tokens,
-            extra_body=self.extra_body,
-        )
-        return resp.choices[0].message.content or ""
+        params = {"temperature": temperature, "max_tokens": self.max_tokens}
+        while True:
+            try:
+                resp = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    extra_body=self.extra_body,
+                    **{k: v for k, v in params.items() if k not in self._rejected},
+                )
+                return resp.choices[0].message.content or ""
+            except Exception as e:  # noqa: BLE001
+                # Some models refuse a temperature or an output cap (reasoning models take neither) and
+                # answer 400 naming the parameter. Drop it, remember, and run that model at its defaults.
+                rejected = [k for k in params if k in str(e) and k not in self._rejected]
+                if getattr(e, "status_code", None) != 400 or not rejected:
+                    raise
+                self._rejected.update(rejected)
+                logger.warning("%s refuses %s; running it at the model's own defaults", self.model, ", ".join(rejected))
