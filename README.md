@@ -56,7 +56,7 @@ This prints the leaderboard and saves the run under `output_folder`: the generat
 
 **Models.** MTEB model ids, such as `"BAAI/bge-base-en-v1.5"` or `"mteb/baseline-bm25s"`. They run through mteb itself, so prompts, revisions, similarity functions and sparse / late-interaction paths are exactly those of an official MTEB run.
 
-**LLMs.** `gym.LLM(model)` talks to OpenAI and reads `OPENAI_API_KEY`, and `OPENAI_BASE_URL` if set, like the openai SDK. `gym.LLM(model, base_url=..., api_key=...)` addresses any other OpenAI-compatible endpoint: a vLLM or Ollama server you run, Together, OpenRouter, or the compatible endpoints of Anthropic and Gemini. The gym itself needs no GPU. The generator samples at temperature 0.7 and the judge at 0; a model that refuses those settings runs at its own defaults, and the log says so. For an experiment, take the judge and the generator from different model families.
+**LLMs.** `gym.LLM(model)` talks to OpenAI and reads `OPENAI_API_KEY`, and `OPENAI_BASE_URL` if set, like the openai SDK. `gym.LLM(model, base_url=..., api_key=...)` addresses any other OpenAI-compatible endpoint: a vLLM or Ollama server you run, Together, OpenRouter, or the compatible endpoints of Anthropic and Gemini. Any object with a `chat(messages, temperature)` method works as a judge or generator, so a wrapper around another client is a few lines. The gym itself needs no GPU. For an experiment, take the judge and the generator from different model families.
 
 **Queries.** By default the generator writes `n_queries` queries from the corpus. If you already have queries, pass them instead: `queries="queries.jsonl"` (`id` and `text` fields), a `.txt` with one query per line, or a list of strings. For an MTEB task, `queries="original"` runs the queries the dataset came with.
 
@@ -81,7 +81,7 @@ A rerun of the same configuration reuses all of it and makes no LLM calls. Read 
 ## How it works
 
 1. **Generate queries**  
-   Sample corpus documents and use a generator LLM to produce natural-language queries.
+   Sample corpus documents and use a generator LLM, sampling at temperature 0.7, to produce natural-language queries.
 
 2. **Filter queries**  
    Remove degenerate, low-quality, and near-duplicate generations.
@@ -90,7 +90,7 @@ A rerun of the same configuration reuses all of it and makes no LLM calls. Read 
    Every candidate model retrieves documents for the same query set using its registered MTEB encoding behavior.
 
 4. **Judge pairwise**  
-   An LLM compares two models' retrieved lists. Each comparison is run in both A/B and B/A order to reduce position bias, and split decisions contribute fractionally rather than being discarded.
+   An LLM compares two models' retrieved lists at temperature 0. Each comparison is run in both A/B and B/A order to reduce position bias, and split decisions contribute fractionally rather than being discarded.
 
 5. **Rank models**  
    Pairwise outcomes are aggregated with Bradley–Terry to produce the leaderboard. Uncertainty is estimated by resampling queries.
