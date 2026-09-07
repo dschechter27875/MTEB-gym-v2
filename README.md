@@ -20,9 +20,7 @@ pip install "mteb-gym @ git+https://github.com/embeddings-benchmark/MTEB-gym-v2"
 
 ## Quickstart
 
-The judge and the generator are LLMs reached over an OpenAI-compatible API. You can run without one, with a hosted API, or with a model you serve yourself.
-
-**Without an API key or GPU**, use the mock judge. It answers deterministically, so this only checks that everything is installed. It does not rank models and takes about a minute on a CPU.
+A dry run first. The mock judge answers deterministically, so this only checks that everything is installed. It does not rank models and takes about a minute on a CPU, with no API key and no GPU.
 
 ```python
 import mteb_gym as gym
@@ -37,13 +35,15 @@ result = gym.run(
 print(result.leaderboard)
 ```
 
-**With an API key.** `gym.LLM(model)` uses OpenAI. Pass `base_url` for any other OpenAI-compatible provider.
+A real run. The judge and the generator are LLMs; `gym.LLM(model)` uses OpenAI, and the next section shows every other server it can talk to.
 
 ```bash
 export OPENAI_API_KEY=<your_api_key>
 ```
 
 ```python
+import mteb_gym as gym
+
 result = gym.run(
     corpus="NFCorpus",
     models=["mteb/baseline-bm25s", "BAAI/bge-base-en-v1.5", "intfloat/e5-base-v2"],
@@ -63,7 +63,15 @@ mteb-gym --corpus NFCorpus \
     --generator gpt-5.4-mini --judge gpt-5.4
 ```
 
-**With an open model you serve yourself.** No key is needed. Start the model with any of these, then point `gym.LLM` at it.
+## LLMs
+
+`gym.LLM(model, base_url=None, api_key=None)` talks to any OpenAI-compatible server. Without `base_url` it uses OpenAI and reads `OPENAI_API_KEY`. For a hosted provider such as OpenRouter, Together, Anthropic or Gemini, pass its URL and key:
+
+```python
+gym.LLM("<model>", base_url="<provider url>", api_key="<key>")
+```
+
+To serve an open model yourself, with no key, start it with one of these.
 
 vLLM:
 
@@ -84,28 +92,57 @@ pip install "transformers[serving]"
 transformers serve --force-model Qwen/Qwen3-4B-Instruct-2507 --port 8000
 ```
 
-Ollama serves the same API at `http://localhost:11434/v1` under its own model names.
+Ollama, which uses its own model names and port:
 
-```python
-llm = gym.LLM("Qwen/Qwen3-4B-Instruct-2507", base_url="http://localhost:8000/v1")
+```bash
+ollama pull qwen3:4b
 ```
 
-Then the same `gym.run` as above with `generator=llm, judge=llm`. One model can take both roles.
+```python
+llm = gym.LLM("qwen3:4b", base_url="http://localhost:11434/v1")
+```
+
+Then point `gym.LLM` at the server. One model can be both judge and generator.
+
+```python
+import mteb_gym as gym
+
+llm = gym.LLM("Qwen/Qwen3-4B-Instruct-2507", base_url="http://localhost:8000/v1")
+
+result = gym.run(
+    corpus="NFCorpus",
+    models=["mteb/baseline-bm25s", "BAAI/bge-base-en-v1.5", "intfloat/e5-base-v2"],
+    generator=llm,
+    judge=llm,
+    n_queries=100,
+    output_folder="results/nfcorpus",
+)
+print(result.leaderboard)
+```
+
+For an experiment, use a judge and a generator from different model families.
 
 ## Usage
 
-Arguments of `gym.run`:
+```python
+gym.run(
+    corpus,                  # MTEB task name, or a folder of .txt/.md files, or a .jsonl with id and text
+    models,                  # MTEB model ids, run through mteb itself
+    judge,                   # gym.LLM(...)
+    generator=None,          # gym.LLM(...); None: the judge writes the queries
+    queries="synthetic",     # "original": the task's own queries; or a .jsonl, a .txt, or a list of yours
+    task_description=None,   # what counts as a good result, one sentence; None: the task's mteb prompt
+    n_queries=100,           # generated queries
+    top_k=10,                # documents judged per query
+    seed=0,
+    filter_queries=True,     # LLM quality filter and deduplication
+    output_folder="results",
+    batch_size=32,           # encoding
+    workers=8,               # concurrent LLM calls
+)
+```
 
-- `corpus`: an MTEB retrieval task name, a directory of `.txt` / `.md` files, or a `.jsonl` with `id` and `text`.
-- `models`: MTEB model ids. They run through mteb, so prompts, revisions and retrieval paths match an official run.
-- `judge`, `generator`: LLM clients, see below. Without a generator, the judge writes the queries.
-- `queries`: `"synthetic"` (default); `"original"` for an MTEB task's own queries; or your own as a `.jsonl` with `id` and `text`, a `.txt` with one query per line, or a list of strings.
-- `task_description`: one sentence on what counts as a good result, seen by generator and judge, e.g. `"Given a claim, find documents that refute it"`. Defaults to the task's mteb prompt.
-- `n_queries` (100), `top_k` documents judged per query (10), `seed` (0), `filter_queries` LLM quality filter and deduplication (on), `output_folder` (`results`), `batch_size` for encoding (32), `workers` concurrent LLM calls (8).
-
-**LLMs.** `gym.LLM(model)` uses OpenAI and reads `OPENAI_API_KEY` and `OPENAI_BASE_URL`. `gym.LLM(model, base_url=..., api_key=...)` reaches any other OpenAI-compatible endpoint: vLLM, Ollama, Together, OpenRouter, Anthropic, Gemini. For an experiment, use a judge and a generator from different model families.
-
-**Output.** Everything is written under `output_folder`. The record holds the ratings, the configuration and the diagnostics:
+Everything is written under `output_folder`. The record holds the ratings, the configuration and the diagnostics:
 
 ```text
 results/nfcorpus/
@@ -117,7 +154,7 @@ results/nfcorpus/
 
 A rerun of the same configuration reuses all of it, and adding a model judges only the new pairs. Judging makes two calls per query per model pair, so 100 queries and 10 models is 9,000 calls. `gym.Result.from_disk(path)` reads one run (`.leaderboard`, `.to_dataframe()`); `gym.load_results("results/")` reads every run under a directory.
 
-**Agreement with MTEB.** For an MTEB task, the ranking can be compared with the official scores after the run. The labels never enter the pipeline. Running with `queries="original"` isolates the judge from query generation.
+For an MTEB task, the ranking can be compared with the official scores after the run. The labels never enter the pipeline. Running with `queries="original"` isolates the judge from query generation.
 
 ```python
 result.agreement()  # one run
