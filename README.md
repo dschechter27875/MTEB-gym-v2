@@ -126,19 +126,19 @@ For an experiment, use a judge and a generator from different model families.
 
 ```python
 gym.run(
-    corpus,                  # MTEB task name, a folder of .txt/.md files, or a .jsonl with id and text
-    models,                  # MTEB model ids, run through mteb itself
-    judge,                   # gym.LLM(...)
-    generator=None,          # gym.LLM(...); None: the judge writes the queries
-    queries="synthetic",     # "original": the task's own queries; or a .jsonl, .txt or list of yours
-    task_description=None,   # what counts as a good result, one sentence; None: the task's mteb prompt
-    n_queries=100,           # generated queries
-    top_k=10,                # documents judged per query
+    corpus,  # MTEB task name, a folder of .txt/.md files, or a .jsonl with id and text
+    models,  # MTEB model ids, run through mteb itself
+    judge,  # gym.LLM(...)
+    generator=None,  # gym.LLM(...); None: the judge writes the queries
+    queries="synthetic",  # "original": the task's own queries; or a .jsonl, .txt or list of yours
+    task_description=None,  # what counts as a good result, one sentence; None: the task's mteb prompt
+    n_queries=100,  # generated queries
+    top_k=10,  # documents judged per query
     seed=0,
-    filter_queries=True,     # LLM quality filter and deduplication
+    filter_queries=True,  # LLM quality filter and deduplication
     output_folder="results",
-    batch_size=32,           # encoding
-    workers=8,               # concurrent LLM calls
+    batch_size=32,  # encoding
+    workers=8,  # concurrent LLM calls
 )
 ```
 
