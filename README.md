@@ -26,7 +26,7 @@ Add `[colbert]` for late-interaction models.
 export OPENAI_API_KEY=<your_api_key>   # or any OpenAI-compatible provider, see LLMs below
 ```
 
-An LLM here is an endpoint, not a download. To use an open model, serve it and pass its URL: `vllm serve <model>`, then `gym.LLM("<model>", base_url="http://localhost:8000/v1")`.
+An LLM here is an endpoint, not a download: OpenAI with the key above, another provider by `base_url`, or an open model you serve yourself with `vllm serve <model>` (Ollama works too) and `gym.LLM("<model>", base_url="http://localhost:8000/v1")`.
 
 ```python
 import mteb_gym as gym
