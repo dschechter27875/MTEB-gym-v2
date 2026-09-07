@@ -48,14 +48,17 @@ class LLM:
     ):
         from openai import OpenAI
 
+        key = api_key or os.environ.get("OPENAI_API_KEY")
+        if base_url is None and key is None and not os.environ.get("OPENAI_BASE_URL"):
+            raise ValueError(
+                f"gym.LLM({model!r}): no API key and no base_url. An LLM is an endpoint, not a download: "
+                f"set OPENAI_API_KEY for OpenAI, or serve the model yourself (`vllm serve {model}`) and pass "
+                "base_url='http://localhost:8000/v1'."
+            )
         # The SDK retries connection errors, timeouts, 429 and 5xx with backoff. Anything else
         # (bad key, unknown model) raises at once. timeout: a hung call would otherwise stall a worker forever.
-        self.client = OpenAI(
-            base_url=base_url,
-            api_key=api_key or os.environ.get("OPENAI_API_KEY", "EMPTY"),
-            timeout=timeout,
-            max_retries=max_retries,
-        )
+        # "EMPTY" is the conventional key for local servers, which accept anything.
+        self.client = OpenAI(base_url=base_url, api_key=key or "EMPTY", timeout=timeout, max_retries=max_retries)
         self.model = model
         self.max_tokens = max_tokens  # no cap unless asked: a cap also counts a reasoning model's thinking
         self.extra_body = extra_body  # server knobs, e.g. {"chat_template_kwargs": {"enable_thinking": False}}
