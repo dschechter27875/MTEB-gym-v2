@@ -32,8 +32,8 @@ import mteb_gym as gym
 result = gym.run(
     corpus="NFCorpus",
     models=["mteb/baseline-bm25s", "BAAI/bge-base-en-v1.5", "intfloat/e5-base-v2"],
-    generator=gym.LLM("gpt-5"),  # writes the queries
-    judge=gym.LLM("gpt-5-mini"),  # compares what the models retrieve
+    generator=gym.LLM("gpt-5.4-mini"),  # writes the queries
+    judge=gym.LLM("gpt-5.4"),  # compares what the models retrieve
     n_queries=100,
     output_folder="results/nfcorpus",
 )
@@ -43,7 +43,7 @@ print(result.leaderboard)
 Or from the shell:
 
 ```bash
-mteb-gym --corpus NFCorpus --models mteb/baseline-bm25s BAAI/bge-base-en-v1.5 intfloat/e5-base-v2 --generator gpt-5 --judge gpt-5-mini
+mteb-gym --corpus NFCorpus --models mteb/baseline-bm25s BAAI/bge-base-en-v1.5 intfloat/e5-base-v2 --generator gpt-5.4-mini --judge gpt-5.4
 ```
 
 This prints the leaderboard and saves the run under `output_folder`: the generated queries, each model's retrieval, every judge verdict, and a record with ratings and confidence intervals.
@@ -66,10 +66,10 @@ This prints the leaderboard and saves the run under `output_folder`: the generat
 
 ```text
 results/nfcorpus/
-├── records/NFCorpus__gpt-5-mini__gpt-5__q100-s0-<hash>.json   # the run: ratings, config, diagnostics
-├── queries/                                                     # generated queries with quality scores
-├── predictions/                                                 # mteb's retrieval output per model
-└── verdicts/                                                    # judge verdicts per model pair, with reasoning
+├── records/NFCorpus__gpt-5.4__gpt-5.4-mini__q100-s0-<hash>.json   # the run: ratings, config, diagnostics
+├── queries/                                                         # generated queries with quality scores
+├── predictions/                                                     # mteb's retrieval output per model
+└── verdicts/                                                        # judge verdicts per model pair, with reasoning
 ```
 
 A rerun of the same configuration reuses all of it and makes no LLM calls. Read a run back with `gym.Result.from_disk(path)` (`.leaderboard`, `.to_dataframe()`), or every run under a directory with `gym.load_results("results/")`.
@@ -81,7 +81,7 @@ A rerun of the same configuration reuses all of it and makes no LLM calls. Read 
 ## How it works
 
 1. **Generate queries**  
-   Sample corpus documents and use a generator LLM to produce natural-language queries.
+   Sample corpus documents and use a generator LLM, sampling at temperature 0.7, to produce natural-language queries.
 
 2. **Filter queries**  
    Remove degenerate, low-quality, and near-duplicate generations.
@@ -90,7 +90,7 @@ A rerun of the same configuration reuses all of it and makes no LLM calls. Read 
    Every candidate model retrieves documents for the same query set using its registered MTEB encoding behavior.
 
 4. **Judge pairwise**  
-   An LLM compares two models' retrieved lists. Each comparison is run in both A/B and B/A order to reduce position bias, and split decisions contribute fractionally rather than being discarded.
+   An LLM compares two models' retrieved lists at temperature 0. Each comparison is run in both A/B and B/A order to reduce position bias, and split decisions contribute fractionally rather than being discarded.
 
 5. **Rank models**  
    Pairwise outcomes are aggregated with Bradley–Terry to produce the leaderboard. Uncertainty is estimated by resampling queries.

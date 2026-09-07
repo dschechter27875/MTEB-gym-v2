@@ -59,6 +59,30 @@ def test_query_generation():
         ]
 
 
+def test_llm_drops_rejected_params():
+    """A model that refuses a parameter (400 naming it) still answers."""
+    from mteb_gym.llm import LLM
+
+    class Refused(Exception):
+        status_code = 400
+
+    calls = []
+
+    class Completions:
+        def create(self, **kw):
+            calls.append(sorted(k for k in kw if k in ("temperature", "max_completion_tokens")))
+            for k in ("temperature", "max_completion_tokens"):
+                if k in kw:
+                    raise Refused(f"Unsupported parameter: '{k}' is not supported with this model.")
+            return types.SimpleNamespace(choices=[types.SimpleNamespace(message=types.SimpleNamespace(content="ok"))])
+
+    llm = LLM("m", api_key="x", max_tokens=512)
+    llm.client = types.SimpleNamespace(chat=types.SimpleNamespace(completions=Completions()))
+    assert llm.chat([{"role": "user", "content": "hi"}]) == "ok"
+    assert llm.chat([{"role": "user", "content": "hi"}]) == "ok"
+    assert calls == [["max_completion_tokens", "temperature"], ["max_completion_tokens"], [], []]  # learned once
+
+
 def test_judge():
     queries = [Query(f"q{i}", f"query {i} about statins", ["D0"]) for i in range(30)]
     ra, rb = fake_ranked("a", queries), fake_ranked("b", queries)
