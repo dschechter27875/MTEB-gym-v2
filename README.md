@@ -22,15 +22,30 @@ Add `[colbert]` for late-interaction models.
 
 ## Quickstart
 
-```bash
-export OPENAI_API_KEY=<your_api_key>   # or any OpenAI-compatible provider, see LLMs below
-```
+`gym.LLM` talks to a server. Three ways to run, from no setup to most control.
 
-`gym.LLM` talks to a server: OpenAI with the key above, another provider by `base_url`, or an open model you serve yourself with `vllm serve <model>` (Ollama works too) and `gym.LLM("<model>", base_url="http://localhost:8000/v1")`.
+**No API key, no GPU: a dry run.** `gym.MockLLM()` answers deterministically, so this checks that everything is installed and wired, in about a minute on a CPU. It does not rank models.
 
 ```python
 import mteb_gym as gym
 
+result = gym.run(
+    corpus="NanoNFCorpusRetrieval",
+    models=["mteb/baseline-bm25s", "sentence-transformers/all-MiniLM-L6-v2"],
+    judge=gym.MockLLM(),
+    n_queries=20,
+    output_folder="results/demo",
+)
+print(result.leaderboard)
+```
+
+**With an API key.** OpenAI by default; any OpenAI-compatible provider through `base_url` (see LLMs below).
+
+```bash
+export OPENAI_API_KEY=<your_api_key>
+```
+
+```python
 result = gym.run(
     corpus="NFCorpus",
     models=["mteb/baseline-bm25s", "BAAI/bge-base-en-v1.5", "intfloat/e5-base-v2"],
@@ -48,7 +63,27 @@ Or from the shell:
 mteb-gym --corpus NFCorpus --models mteb/baseline-bm25s BAAI/bge-base-en-v1.5 intfloat/e5-base-v2 --generator gpt-5.4-mini --judge gpt-5.4
 ```
 
-This prints the leaderboard and saves the run under `output_folder`: the generated queries, each model's retrieval, every judge verdict, and a record with ratings and confidence intervals.
+**With an open model you serve yourself: no key, needs a GPU.** Serve it with vLLM (`transformers serve` and Ollama work too), then point `gym.LLM` at it. One served model can take both roles.
+
+```bash
+vllm serve Qwen/Qwen3-4B-Instruct-2507 --port 8000
+```
+
+```python
+llm = gym.LLM("Qwen/Qwen3-4B-Instruct-2507", base_url="http://localhost:8000/v1")
+
+result = gym.run(
+    corpus="NFCorpus",
+    models=["mteb/baseline-bm25s", "BAAI/bge-base-en-v1.5", "intfloat/e5-base-v2"],
+    generator=llm,
+    judge=llm,
+    n_queries=100,
+    output_folder="results/nfcorpus",
+)
+print(result.leaderboard)
+```
+
+Every run prints the leaderboard and saves everything under `output_folder`: the queries, each model's retrieval, every judge verdict, and a record with ratings and confidence intervals.
 
 ## Usage
 
