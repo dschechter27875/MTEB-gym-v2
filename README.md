@@ -58,7 +58,9 @@ print(result.leaderboard)
 Or from the command line:
 
 ```bash
-mteb-gym --corpus NFCorpus --models mteb/baseline-bm25s BAAI/bge-base-en-v1.5 --generator gpt-5.4-mini --judge gpt-5.4
+mteb-gym --corpus NFCorpus \
+    --models mteb/baseline-bm25s BAAI/bge-base-en-v1.5 intfloat/e5-base-v2 \
+    --generator gpt-5.4-mini --judge gpt-5.4
 ```
 
 **With an open model you serve yourself.** No key is needed. Start the model with any of these, then point `gym.LLM` at it.
@@ -103,11 +105,11 @@ Arguments of `gym.run`:
 
 **LLMs.** `gym.LLM(model)` uses OpenAI and reads `OPENAI_API_KEY` and `OPENAI_BASE_URL`. `gym.LLM(model, base_url=..., api_key=...)` reaches any other OpenAI-compatible endpoint: vLLM, Ollama, Together, OpenRouter, Anthropic, Gemini. For an experiment, use a judge and a generator from different model families.
 
-**Output.** Everything is written under `output_folder`:
+**Output.** Everything is written under `output_folder`. The record holds the ratings, the configuration and the diagnostics:
 
 ```text
 results/nfcorpus/
-├── records/NFCorpus__gpt-5.4__gpt-5.4-mini__q100-s0-<hash>.json   # ratings, config, diagnostics
+├── records/NFCorpus__gpt-5.4__gpt-5.4-mini__q100-s0-<hash>.json
 ├── queries/       # generated queries with quality scores
 ├── predictions/   # mteb's retrieval output per model
 └── verdicts/      # judge verdicts per model pair
