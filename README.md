@@ -58,40 +58,58 @@ print(result.leaderboard)
 Or from the command line:
 
 ```bash
-mteb-gym --corpus NFCorpus --models mteb/baseline-bm25s BAAI/bge-base-en-v1.5 --generator gpt-5.4-mini --judge gpt-5.4
+mteb-gym --corpus NFCorpus \
+    --models mteb/baseline-bm25s BAAI/bge-base-en-v1.5 intfloat/e5-base-v2 \
+    --generator gpt-5.4-mini --judge gpt-5.4
 ```
 
-**With an open model you serve yourself.** Start it with vLLM, `transformers serve` or Ollama and pass its URL. No key is needed, and one model can be both judge and generator.
+**With an open model you serve yourself.** No key is needed. Start the model with any of these, then point `gym.LLM` at it.
+
+vLLM:
 
 ```bash
 vllm serve Qwen/Qwen3-4B-Instruct-2507 --port 8000
 ```
 
+SGLang:
+
+```bash
+python -m sglang.launch_server --model-path Qwen/Qwen3-4B-Instruct-2507 --port 8000
+```
+
+transformers:
+
+```bash
+pip install "transformers[serving]"
+transformers serve --force-model Qwen/Qwen3-4B-Instruct-2507 --port 8000
+```
+
+Ollama serves the same API at `http://localhost:11434/v1` under its own model names.
+
 ```python
 llm = gym.LLM("Qwen/Qwen3-4B-Instruct-2507", base_url="http://localhost:8000/v1")
-result = gym.run(corpus="NFCorpus", models=["mteb/baseline-bm25s", "BAAI/bge-base-en-v1.5"], generator=llm, judge=llm)
 ```
+
+Then the same `gym.run` as above with `generator=llm, judge=llm`. One model can take both roles.
 
 ## Usage
 
-| `gym.run` argument | Takes |
-|---|---|
-| `corpus` | an MTEB retrieval task name, a directory of `.txt` / `.md` files, or a `.jsonl` with `id` and `text` |
-| `models` | MTEB model ids; they run through mteb, so prompts, revisions and retrieval paths match an official run |
-| `judge`, `generator` | LLM clients, see below; without a generator the judge writes the queries |
-| `queries` | `"synthetic"` (default), `"original"` for an MTEB task's own queries, or your own as a `.jsonl` with `id` and `text`, a `.txt` with one per line, or a list of strings |
-| `task_description` | one sentence on what counts as a good result, seen by generator and judge, e.g. `"Given a claim, find documents that refute it"`; defaults to the task's mteb prompt |
-| `n_queries`, `top_k`, `seed` | 100 generated queries, 10 documents judged per query, seed 0 |
-| `filter_queries` | LLM quality filter and deduplication, on by default |
-| `output_folder`, `batch_size`, `workers` | where files go (`results`), encoding batch size, concurrent LLM calls |
+Arguments of `gym.run`:
+
+- `corpus`: an MTEB retrieval task name, a directory of `.txt` / `.md` files, or a `.jsonl` with `id` and `text`.
+- `models`: MTEB model ids. They run through mteb, so prompts, revisions and retrieval paths match an official run.
+- `judge`, `generator`: LLM clients, see below. Without a generator, the judge writes the queries.
+- `queries`: `"synthetic"` (default); `"original"` for an MTEB task's own queries; or your own as a `.jsonl` with `id` and `text`, a `.txt` with one query per line, or a list of strings.
+- `task_description`: one sentence on what counts as a good result, seen by generator and judge, e.g. `"Given a claim, find documents that refute it"`. Defaults to the task's mteb prompt.
+- `n_queries` (100), `top_k` documents judged per query (10), `seed` (0), `filter_queries` LLM quality filter and deduplication (on), `output_folder` (`results`), `batch_size` for encoding (32), `workers` concurrent LLM calls (8).
 
 **LLMs.** `gym.LLM(model)` uses OpenAI and reads `OPENAI_API_KEY` and `OPENAI_BASE_URL`. `gym.LLM(model, base_url=..., api_key=...)` reaches any other OpenAI-compatible endpoint: vLLM, Ollama, Together, OpenRouter, Anthropic, Gemini. For an experiment, use a judge and a generator from different model families.
 
-**Output.** Everything is written under `output_folder`:
+**Output.** Everything is written under `output_folder`. The record holds the ratings, the configuration and the diagnostics:
 
 ```text
 results/nfcorpus/
-├── records/NFCorpus__gpt-5.4__gpt-5.4-mini__q100-s0-<hash>.json   # ratings, config, diagnostics
+├── records/NFCorpus__gpt-5.4__gpt-5.4-mini__q100-s0-<hash>.json
 ├── queries/       # generated queries with quality scores
 ├── predictions/   # mteb's retrieval output per model
 └── verdicts/      # judge verdicts per model pair
