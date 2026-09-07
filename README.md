@@ -61,13 +61,28 @@ Or from the command line:
 mteb-gym --corpus NFCorpus --models mteb/baseline-bm25s BAAI/bge-base-en-v1.5 --generator gpt-5.4-mini --judge gpt-5.4
 ```
 
-**With an open model you serve yourself.** No key is needed. Start the model with one of these, then point `gym.LLM` at it:
+**With an open model you serve yourself.** No key is needed. Start the model with any of these, then point `gym.LLM` at it.
 
-| Serve with | Command | `base_url` |
-|---|---|---|
-| vLLM | `vllm serve Qwen/Qwen3-4B-Instruct-2507 --port 8000` | `http://localhost:8000/v1` |
-| transformers | `pip install "transformers[serving]"`, then `transformers serve --force-model Qwen/Qwen3-4B-Instruct-2507 --port 8000` | `http://localhost:8000/v1` |
-| Ollama | `ollama run <model>` | `http://localhost:11434/v1` |
+vLLM:
+
+```bash
+vllm serve Qwen/Qwen3-4B-Instruct-2507 --port 8000
+```
+
+SGLang:
+
+```bash
+python -m sglang.launch_server --model-path Qwen/Qwen3-4B-Instruct-2507 --port 8000
+```
+
+transformers:
+
+```bash
+pip install "transformers[serving]"
+transformers serve --force-model Qwen/Qwen3-4B-Instruct-2507 --port 8000
+```
+
+Ollama serves the same API at `http://localhost:11434/v1` under its own model names.
 
 ```python
 llm = gym.LLM("Qwen/Qwen3-4B-Instruct-2507", base_url="http://localhost:8000/v1")
