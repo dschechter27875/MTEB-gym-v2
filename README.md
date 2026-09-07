@@ -1,16 +1,14 @@
 # MTEB Gym
 
-Label-free, LLM-judged model selection for embedding models.
+Label-free, LLM-judged evaluation of embedding models.
 
-Give MTEB Gym a corpus, an MTEB task or your own documents. It generates queries for that corpus, or takes queries you supply. Every candidate model retrieves for the same queries, an LLM judge compares the retrieved lists pairwise, and Bradley–Terry turns the comparisons into a ranking. No relevance labels are needed at any step.
+Give it a corpus, an MTEB task or your own documents. It generates queries for the corpus, or takes yours. Every model retrieves for the same queries, an LLM judge compares the retrieved lists pairwise, and Bradley–Terry turns the comparisons into a ranking. No relevance labels at any step.
 
 ```text
-corpus → queries (generated, or yours) → retrieval → pairwise LLM judging → model ranking
+corpus → queries → retrieval → pairwise LLM judging → ranking
 ```
 
-**Given a new corpus with no relevance labels, which embedding model should you use?**
-
-MTEB Gym originated from the [MTEB Gym discussion](https://github.com/embeddings-benchmark/mteb/discussions/3068).
+Started in the [MTEB Gym discussion](https://github.com/embeddings-benchmark/mteb/discussions/3068).
 
 ## Installation
 
@@ -18,13 +16,13 @@ MTEB Gym originated from the [MTEB Gym discussion](https://github.com/embeddings
 pip install "mteb-gym @ git+https://github.com/embeddings-benchmark/MTEB-gym-v2"
 ```
 
-Add `[colbert]` for late-interaction models.
+`[colbert]` adds late-interaction models.
 
 ## Quickstart
 
-`gym.LLM` talks to a server. Three ways to run, from no setup to most control.
+`gym.LLM` talks to a server. Three ways to run.
 
-**No API key, no GPU: a dry run.** `gym.MockLLM()` answers deterministically, so this checks that everything is installed and wired, in about a minute on a CPU. It does not rank models.
+**Dry run, no key, no GPU.** The mock judge answers deterministically. This checks the install; it does not rank models. About a minute on a CPU.
 
 ```python
 import mteb_gym as gym
@@ -39,7 +37,7 @@ result = gym.run(
 print(result.leaderboard)
 ```
 
-**With an API key.** OpenAI by default; any OpenAI-compatible provider through `base_url` (see LLMs below).
+**With an API key.** OpenAI by default, any OpenAI-compatible provider via `base_url`.
 
 ```bash
 export OPENAI_API_KEY=<your_api_key>
@@ -57,13 +55,9 @@ result = gym.run(
 print(result.leaderboard)
 ```
 
-Or from the shell:
+Shell: `mteb-gym --corpus NFCorpus --models mteb/baseline-bm25s BAAI/bge-base-en-v1.5 --generator gpt-5.4-mini --judge gpt-5.4`
 
-```bash
-mteb-gym --corpus NFCorpus --models mteb/baseline-bm25s BAAI/bge-base-en-v1.5 intfloat/e5-base-v2 --generator gpt-5.4-mini --judge gpt-5.4
-```
-
-**With an open model you serve yourself: no key, needs a GPU.** Serve it with vLLM (`transformers serve` and Ollama work too), then point `gym.LLM` at it. One served model can take both roles.
+**With an open model you serve, no key.** vLLM, `transformers serve` or Ollama. One model can take both roles.
 
 ```bash
 vllm serve Qwen/Qwen3-4B-Instruct-2507 --port 8000
@@ -71,107 +65,81 @@ vllm serve Qwen/Qwen3-4B-Instruct-2507 --port 8000
 
 ```python
 llm = gym.LLM("Qwen/Qwen3-4B-Instruct-2507", base_url="http://localhost:8000/v1")
-
-result = gym.run(
-    corpus="NFCorpus",
-    models=["mteb/baseline-bm25s", "BAAI/bge-base-en-v1.5", "intfloat/e5-base-v2"],
-    generator=llm,
-    judge=llm,
-    n_queries=100,
-    output_folder="results/nfcorpus",
-)
-print(result.leaderboard)
+result = gym.run(corpus="NFCorpus", models=["mteb/baseline-bm25s", "BAAI/bge-base-en-v1.5"], generator=llm, judge=llm)
 ```
-
-Every run prints the leaderboard and saves everything under `output_folder`: the queries, each model's retrieval, every judge verdict, and a record with ratings and confidence intervals.
 
 ## Usage
 
-`gym.run` takes a corpus, the models to rank, and two LLMs: a generator that writes the queries and a judge that compares the retrieved results. The generator is used only for synthetic queries. Without one, the judge writes the queries too.
+**Corpus.** An MTEB retrieval task name, or your own documents: a directory of `.txt` / `.md` files, or a `.jsonl` with `id` and `text`.
 
-**Corpus.** An MTEB retrieval task name such as `"NFCorpus"`, or a path to your own documents: a directory of `.txt` / `.md` files, or a `.jsonl` with `id` and `text` fields.
+**Models.** MTEB model ids. They run through mteb, so prompts, revisions and retrieval paths match an official MTEB run.
 
-**Models.** MTEB model ids, such as `"BAAI/bge-base-en-v1.5"` or `"mteb/baseline-bm25s"`. They run through mteb itself, so prompts, revisions, similarity functions and sparse / late-interaction paths are exactly those of an official MTEB run.
+**LLMs.** `gym.LLM(model)` uses OpenAI and reads `OPENAI_API_KEY` and `OPENAI_BASE_URL`. `gym.LLM(model, base_url=..., api_key=...)` reaches any other OpenAI-compatible endpoint: vLLM, Ollama, Together, OpenRouter, Anthropic, Gemini. For an experiment, use a judge and a generator from different model families.
 
-**LLMs.** `gym.LLM(model)` talks to OpenAI and reads `OPENAI_API_KEY`, and `OPENAI_BASE_URL` if set, like the openai SDK. `gym.LLM(model, base_url=..., api_key=...)` addresses any other OpenAI-compatible endpoint: a vLLM or Ollama server you run, Together, OpenRouter, or the compatible endpoints of Anthropic and Gemini. The gym itself needs no GPU. For an experiment, take the judge and the generator from different model families.
+**Queries.** Generated by default. Your own: `queries="queries.jsonl"` (`id`, `text`), a `.txt` with one per line, or a list of strings. For an MTEB task, `queries="original"` uses the dataset's queries.
 
-**Queries.** By default the generator writes `n_queries` queries from the corpus. If you already have queries, pass them instead: `queries="queries.jsonl"` (`id` and `text` fields), a `.txt` with one query per line, or a list of strings. For an MTEB task, `queries="original"` runs the queries the dataset came with.
+**Task description.** One sentence on what a good result is, given to the generator and the judge, e.g. `"Given a claim, find documents that refute it"`. For an MTEB task it defaults to the task's prompt.
 
-**Task description.** One sentence on what counts as a good result, given to the generator and the judge, for example `"Given a claim, find documents that refute it"`. For an MTEB task it defaults to the task's own prompt.
-
-**Output.** Everything lands under `output_folder`:
+**Output.**
 
 ```text
 results/nfcorpus/
-├── records/NFCorpus__gpt-5.4__gpt-5.4-mini__q100-s0-<hash>.json   # the run: ratings, config, diagnostics
-├── queries/                                                         # generated queries with quality scores
-├── predictions/                                                     # mteb's retrieval output per model
-└── verdicts/                                                        # judge verdicts per model pair, with reasoning
+├── records/NFCorpus__gpt-5.4__gpt-5.4-mini__q100-s0-<hash>.json   # ratings, config, diagnostics
+├── queries/       # generated queries with quality scores
+├── predictions/   # mteb's retrieval output per model
+└── verdicts/      # judge verdicts per model pair
 ```
 
-A rerun of the same configuration reuses all of it and makes no LLM calls. Read a run back with `gym.Result.from_disk(path)` (`.leaderboard`, `.to_dataframe()`), or every run under a directory with `gym.load_results("results/")`.
+A rerun of the same configuration reuses all of it. `gym.Result.from_disk(path)` reads one run (`.leaderboard`, `.to_dataframe()`); `gym.load_results("results/")` reads every run under a directory.
 
-**Cost.** Judging makes 2 calls per query per model pair (both presentation orders): 100 queries and 10 models is 9,000 judge calls, plus about 1.6 generator calls per kept query. A rerun with one model added judges only the new pairs.
+**Cost.** Two judge calls per query per model pair: 100 queries and 10 models is 9,000 calls. Adding a model judges only the new pairs.
 
-**Other arguments.** `top_k` (documents judged per query, 10), `seed`, `filter_queries` (LLM quality filter and deduplication, on by default), `batch_size` for encoding, `workers` for concurrent LLM calls.
+**Other arguments.** `top_k` (10), `seed`, `filter_queries` (LLM quality filter and deduplication, on), `batch_size`, `workers`.
 
 ## How it works
 
-1. **Generate queries**  
-   Sample corpus documents and use a generator LLM, sampling at temperature 0.7, to produce natural-language queries.
-
-2. **Filter queries**  
-   Remove degenerate, low-quality, and near-duplicate generations.
-
-3. **Retrieve**  
-   Every candidate model retrieves documents for the same query set using its registered MTEB encoding behavior.
-
-4. **Judge pairwise**  
-   An LLM compares two models' retrieved lists at temperature 0. Each comparison is run in both A/B and B/A order to reduce position bias, and split decisions contribute fractionally rather than being discarded.
-
-5. **Rank models**  
-   Pairwise outcomes are aggregated with Bradley–Terry to produce the leaderboard. Uncertainty is estimated by resampling queries.
-
-6. **Record the run**  
-   Queries, mteb's retrieval predictions, judge verdicts, model revisions, the resolved configuration, and the Git revision are persisted. Every stage is cached by identity (dataset and model revisions, judge and prompt), so a rerun repeats only what changed and a reported ranking can be reproduced offline without new LLM calls.
+1. Sample documents; the generator writes one query per sample at temperature 0.7. Short, malformed, low-quality and near-duplicate queries are dropped.
+2. Every model retrieves through `mteb.evaluate`.
+3. The judge compares two models' top-k lists per query, in both orders, at temperature 0. A split decision counts half.
+4. Bradley–Terry over all pairwise outcomes gives the ranking; confidence intervals come from resampling queries.
+5. Queries, predictions, verdicts, model revisions and configuration are written to disk and cached by identity, so a rerun repeats only what changed.
 
 ## Validation against MTEB
 
-For an MTEB task, the ranking can be compared with the official scores after a run; the labels never enter the pipeline. `queries="original"` runs the queries the dataset came with instead of synthetic ones, which isolates the judge.
+For an MTEB task, compare the ranking with the official scores after the run; labels never enter the pipeline. `queries="original"` isolates the judge from query generation.
 
 ```python
 result.agreement()  # one run
 gym.load_results("results/").agreement()  # every run under a directory
-gym.load_results("results/").to_dataframe()  # all runs in one frame
 ```
 
-Official scores come from the MTEB results repository through mteb's result cache. Models without one are skipped unless `agreement(evaluate_missing=True)`, which runs mteb on the real task and stores the result in that cache. The output records whether each anchor was official or self-run, with Spearman, Kendall, top-10 Spearman and AP correlation and bootstrap intervals.
+Official scores come from the MTEB results repository through mteb's cache; `agreement(evaluate_missing=True)` runs mteb for models without one. Reported: Spearman, Kendall, top-10 Spearman, AP correlation, bootstrap intervals, and whether each score was official or self-run.
 
 ## Architecture
 
 ```text
 mteb_gym/
-├── corpus.py     load an MTEB task corpus or a local one
-├── queries.py    synthetic query generation and filtering
-├── task.py       the corpus + queries as an mteb retrieval task
-├── retrieval.py  mteb.evaluate per model; read mteb's predictions
-├── judge.py      pairwise LLM judging, both presentation orders
-├── rank.py       Bradley-Terry with bootstrap CIs
-├── results.py    records: Result, Results, load_results
+├── corpus.py     an MTEB task corpus or a local one
+├── queries.py    query generation and filtering
+├── task.py       corpus + queries as an mteb retrieval task
+├── retrieval.py  mteb.evaluate per model; read its predictions
+├── judge.py      pairwise judging, both orders
+├── rank.py       Bradley–Terry with bootstrap CIs
+├── results.py    Result, Results, load_results
 ├── agreement.py  agreement with official MTEB scores
-├── llm.py        LLM (any OpenAI-compatible endpoint) and MockLLM
-└── run.py        the pipeline, every stage cached on disk
+├── llm.py        LLM and MockLLM
+└── run.py        the pipeline
 ```
 
 ## Development
 
 ```bash
-make install     # uv sync with the dev tools
-make test        # pytest, including two end-to-end runs (a local corpus and a Nano MTEB task)
-make lint        # ruff format + check
+make install   # uv sync with dev tools
+make test      # pytest, two end-to-end runs included
+make lint      # ruff
 ```
 
-Tests run the pipeline end to end with `gym.MockLLM()`, a deterministic stand-in: no API key, no GPU. The end-to-end runs download a small MTEB task and MiniLM once. CI runs the suite on Python 3.10 and 3.13.
+Tests use the mock LLM: no key, no GPU. CI runs on Python 3.10 and 3.13.
 
 ## Citation
 
