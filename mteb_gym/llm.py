@@ -41,7 +41,7 @@ class LLM:
         model: str,
         base_url: str | None = None,
         api_key: str | None = None,
-        max_tokens: int = 512,
+        max_tokens: int | None = None,
         max_retries: int = 4,
         extra_body: dict | None = None,
         timeout: float = 120.0,
@@ -57,12 +57,14 @@ class LLM:
             max_retries=max_retries,
         )
         self.model = model
-        self.max_tokens = max_tokens
+        self.max_tokens = max_tokens  # no cap unless asked: a cap also counts a reasoning model's thinking
         self.extra_body = extra_body  # server knobs, e.g. {"chat_template_kwargs": {"enable_thinking": False}}
         self._rejected: set[str] = set()  # sampling parameters this model refused
 
     def chat(self, messages: list[dict], temperature: float = 0.0) -> str:
-        params = {"temperature": temperature, "max_completion_tokens": self.max_tokens}
+        params = {"temperature": temperature}
+        if self.max_tokens is not None:
+            params["max_completion_tokens"] = self.max_tokens
         while True:
             try:
                 resp = self.client.chat.completions.create(

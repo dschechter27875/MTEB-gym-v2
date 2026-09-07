@@ -76,7 +76,7 @@ def test_llm_drops_rejected_params():
                     raise Refused(f"Unsupported parameter: '{k}' is not supported with this model.")
             return types.SimpleNamespace(choices=[types.SimpleNamespace(message=types.SimpleNamespace(content="ok"))])
 
-    llm = LLM("m", api_key="x")
+    llm = LLM("m", api_key="x", max_tokens=512)
     llm.client = types.SimpleNamespace(chat=types.SimpleNamespace(completions=Completions()))
     assert llm.chat([{"role": "user", "content": "hi"}]) == "ok"
     assert llm.chat([{"role": "user", "content": "hi"}]) == "ok"
