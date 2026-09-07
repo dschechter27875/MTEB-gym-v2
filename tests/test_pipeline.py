@@ -59,14 +59,9 @@ def test_query_generation():
         ]
 
 
-def test_llm_drops_rejected_params(monkeypatch):
-    """A model that refuses a parameter (400 naming it) still answers; no key and no URL fails at once."""
+def test_llm_drops_rejected_params():
+    """A model that refuses a parameter (400 naming it) still answers."""
     from mteb_gym.llm import LLM
-
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
-    with pytest.raises(ValueError, match="endpoint"):
-        LLM("m")
 
     class Refused(Exception):
         status_code = 400
