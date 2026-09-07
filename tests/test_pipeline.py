@@ -60,7 +60,7 @@ def test_query_generation():
 
 
 def test_llm_drops_rejected_params():
-    """A model that refuses temperature or max_tokens (400 naming the parameter) still answers."""
+    """A model that refuses a parameter (400 naming it) still answers."""
     from mteb_gym.llm import LLM
 
     class Refused(Exception):
@@ -70,8 +70,8 @@ def test_llm_drops_rejected_params():
 
     class Completions:
         def create(self, **kw):
-            calls.append(sorted(k for k in kw if k in ("temperature", "max_tokens")))
-            for k in ("temperature", "max_tokens"):
+            calls.append(sorted(k for k in kw if k in ("temperature", "max_completion_tokens")))
+            for k in ("temperature", "max_completion_tokens"):
                 if k in kw:
                     raise Refused(f"Unsupported parameter: '{k}' is not supported with this model.")
             return types.SimpleNamespace(choices=[types.SimpleNamespace(message=types.SimpleNamespace(content="ok"))])
@@ -80,7 +80,7 @@ def test_llm_drops_rejected_params():
     llm.client = types.SimpleNamespace(chat=types.SimpleNamespace(completions=Completions()))
     assert llm.chat([{"role": "user", "content": "hi"}]) == "ok"
     assert llm.chat([{"role": "user", "content": "hi"}]) == "ok"
-    assert calls == [["max_tokens", "temperature"], ["max_tokens"], [], []]  # learned once, then remembered
+    assert calls == [["max_completion_tokens", "temperature"], ["max_completion_tokens"], [], []]  # learned once
 
 
 def test_judge():

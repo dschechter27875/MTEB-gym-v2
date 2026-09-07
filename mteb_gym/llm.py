@@ -62,7 +62,7 @@ class LLM:
         self._rejected: set[str] = set()  # sampling parameters this model refused
 
     def chat(self, messages: list[dict], temperature: float = 0.0) -> str:
-        params = {"temperature": temperature, "max_tokens": self.max_tokens}
+        params = {"temperature": temperature, "max_completion_tokens": self.max_tokens}
         while True:
             try:
                 resp = self.client.chat.completions.create(
@@ -73,8 +73,9 @@ class LLM:
                 )
                 return resp.choices[0].message.content or ""
             except Exception as e:  # noqa: BLE001
-                # Some models refuse a temperature or an output cap (reasoning models take neither) and
-                # answer 400 naming the parameter. Drop it, remember, and run that model at its defaults.
+                # Some models refuse a parameter and answer 400 naming it: models that always reason take
+                # no temperature, older servers may not know max_completion_tokens. Drop it, remember, and
+                # run that model at its own defaults.
                 rejected = [k for k in params if k in str(e) and k not in self._rejected]
                 if getattr(e, "status_code", None) != 400 or not rejected:
                     raise
