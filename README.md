@@ -66,7 +66,7 @@ mteb-gym --corpus NFCorpus \
 
 ## LLMs
 
-`gym.LLM(model)` talks to any OpenAI-compatible server. It reads `OPENAI_API_KEY` and `OPENAI_BASE_URL` like the openai SDK, so two exports point it at any server; `base_url` and `api_key` do the same in code.
+`gym.LLM(model)` talks to any OpenAI-compatible server. Like the openai SDK, it reads `OPENAI_API_KEY` and `OPENAI_BASE_URL` from the environment, or takes them as the `api_key` and `base_url` arguments.
 
 ```bash
 export OPENAI_BASE_URL=<server url>   # omit for OpenAI
