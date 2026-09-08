@@ -66,24 +66,10 @@ mteb-gym --corpus NFCorpus \
 
 ## LLMs
 
-`gym.LLM` talks to any OpenAI-compatible server. To use an open model, install vLLM, SGLang or `transformers[serving]`, none of which the gym depends on, and start it. Each serves `http://localhost:8000/v1`.
-
-**vLLM**
+`gym.LLM` talks to any OpenAI-compatible server. To use an open model, serve it:
 
 ```bash
 vllm serve Qwen/Qwen3-4B-Instruct-2507 --port 8000
-```
-
-**SGLang**
-
-```bash
-python -m sglang.launch_server --model-path Qwen/Qwen3-4B-Instruct-2507 --port 8000
-```
-
-**transformers**
-
-```bash
-transformers serve --force-model Qwen/Qwen3-4B-Instruct-2507 --port 8000
 ```
 
 Then point the client at it. Like the openai SDK, it reads these two variables, or takes them as the `base_url` and `api_key` arguments. A local server accepts any key.
@@ -109,7 +95,7 @@ result = gym.run(
 print(result.leaderboard)
 ```
 
-A hosted provider such as OpenRouter, Together, Anthropic or Gemini works the same way with its URL and your key. A judge and a generator from different model families are preferred.
+SGLang and `transformers serve` expose the same endpoint. A hosted provider such as OpenRouter, Together, Anthropic or Gemini works the same way with its URL and your key. A judge and a generator from different model families are preferred.
 
 ## Usage
 
