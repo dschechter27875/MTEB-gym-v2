@@ -66,9 +66,7 @@ mteb-gym --corpus NFCorpus \
 
 ## LLMs
 
-`gym.LLM(model)` talks to any OpenAI-compatible server. Like the openai SDK, it reads `OPENAI_API_KEY` and `OPENAI_BASE_URL` from the environment, or takes them as the `api_key` and `base_url` arguments. Hosted providers such as OpenRouter, Together, Anthropic and Gemini expose an OpenAI-compatible URL.
-
-To serve an open model yourself, install vLLM, SGLang or `transformers[serving]`, none of which the gym depends on, and start it. Each serves `http://localhost:8000/v1`.
+`gym.LLM` talks to any OpenAI-compatible server. To use an open model, install vLLM, SGLang or `transformers[serving]`, none of which the gym depends on, and start it. Each serves `http://localhost:8000/v1`.
 
 **vLLM**
 
@@ -88,7 +86,7 @@ python -m sglang.launch_server --model-path Qwen/Qwen3-4B-Instruct-2507 --port 8
 transformers serve --force-model Qwen/Qwen3-4B-Instruct-2507 --port 8000
 ```
 
-Then point the client at it. A local server accepts any key.
+Then point the client at it. Like the openai SDK, it reads these two variables, or takes them as the `base_url` and `api_key` arguments. A local server accepts any key.
 
 ```bash
 export OPENAI_BASE_URL=http://localhost:8000/v1
@@ -99,7 +97,7 @@ export OPENAI_API_KEY=EMPTY
 llm = gym.LLM("Qwen/Qwen3-4B-Instruct-2507")
 ```
 
-`llm` is the judge or the generator in `gym.run`. A judge and a generator from different model families are preferred.
+`llm` is the judge or the generator in `gym.run`. A hosted provider such as OpenRouter, Together, Anthropic or Gemini works the same way with its URL and your key. A judge and a generator from different model families are preferred.
 
 ## Usage
 
