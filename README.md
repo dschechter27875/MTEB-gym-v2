@@ -20,7 +20,7 @@ pip install "mteb-gym @ git+https://github.com/embeddings-benchmark/MTEB-gym-v2"
 
 ## Quickstart
 
-The mock LLM needs no API key or GPU. It answers deterministically, so this checks the install and does not rank models. The first run downloads a small dataset and MiniLM, then encodes on the CPU; allow a few minutes.
+The mock LLM needs no API key or GPU. It answers deterministically, so this checks the install and does not rank models. The first run downloads a small dataset and MiniLM; allow a few minutes.
 
 ```python
 import mteb_gym as gym
@@ -64,7 +64,7 @@ mteb-gym --corpus NFCorpus \
     --generator gpt-5.4-mini --judge gpt-5.4
 ```
 
-## LLMs
+## Open models
 
 `gym.LLM` talks to any OpenAI-compatible server. To use an open model, serve it:
 
@@ -151,7 +151,7 @@ gym.load_results("results/").agreement()  # every run under a directory
    Bradley–Terry over all pairwise outcomes; confidence intervals from resampling queries.
 
 6. **Record the run**  
-   Queries, predictions, verdicts, model revisions and configuration go to disk, cached by identity, so a rerun repeats only what changed.
+   Queries, predictions, verdicts, model revisions and configuration are written to disk and cached, so a rerun repeats only what changed.
 
 ## Development
 
