@@ -20,7 +20,7 @@ pip install "mteb-gym @ git+https://github.com/embeddings-benchmark/MTEB-gym-v2"
 
 ## Quickstart
 
-The mock judge needs no API key or GPU. It answers deterministically, so this checks the install and does not rank models. About a minute on a CPU.
+The mock LLM needs no API key or GPU. It answers deterministically, so this checks the install and does not rank models. About a minute on a CPU.
 
 ```python
 import mteb_gym as gym
@@ -28,6 +28,7 @@ import mteb_gym as gym
 result = gym.run(
     corpus="NanoNFCorpusRetrieval",
     models=["mteb/baseline-bm25s", "sentence-transformers/all-MiniLM-L6-v2"],
+    generator=gym.MockLLM(),
     judge=gym.MockLLM(),
     n_queries=20,
     output_folder="results/demo",
@@ -65,52 +66,40 @@ mteb-gym --corpus NFCorpus \
 
 ## LLMs
 
-`gym.LLM(model, base_url=None, api_key=None)` talks to any OpenAI-compatible server. Without `base_url` it uses OpenAI and reads `OPENAI_API_KEY`. For a hosted provider such as OpenRouter, Together, Anthropic or Gemini, pass its URL and key:
+`gym.LLM(model)` talks to any OpenAI-compatible server. Like the openai SDK, it reads `OPENAI_API_KEY` and `OPENAI_BASE_URL` from the environment, or takes them as the `api_key` and `base_url` arguments. Hosted providers such as OpenRouter, Together, Anthropic and Gemini expose an OpenAI-compatible URL.
 
-```python
-gym.LLM("<model>", base_url="<provider url>", api_key="<key>")
-```
+To serve an open model yourself, install vLLM, SGLang or `transformers[serving]`, none of which the gym depends on, and start it. Each serves `http://localhost:8000/v1`.
 
-To serve an open model yourself, no key needed, start it with one of these.
-
-vLLM:
+**vLLM**
 
 ```bash
 vllm serve Qwen/Qwen3-4B-Instruct-2507 --port 8000
 ```
 
-SGLang:
+**SGLang**
 
 ```bash
 python -m sglang.launch_server --model-path Qwen/Qwen3-4B-Instruct-2507 --port 8000
 ```
 
-transformers:
+**transformers**
 
 ```bash
-pip install "transformers[serving]"
 transformers serve --force-model Qwen/Qwen3-4B-Instruct-2507 --port 8000
 ```
 
-Then point `gym.LLM` at the server. One model can be both judge and generator.
+Then point the client at it. A local server accepts any key.
 
-```python
-import mteb_gym as gym
-
-llm = gym.LLM("Qwen/Qwen3-4B-Instruct-2507", base_url="http://localhost:8000/v1")
-
-result = gym.run(
-    corpus="NFCorpus",
-    models=["mteb/baseline-bm25s", "BAAI/bge-base-en-v1.5", "intfloat/e5-base-v2"],
-    generator=llm,
-    judge=llm,
-    n_queries=100,
-    output_folder="results/nfcorpus",
-)
-print(result.leaderboard)
+```bash
+export OPENAI_BASE_URL=http://localhost:8000/v1
+export OPENAI_API_KEY=EMPTY
 ```
 
-For an experiment, use a judge and a generator from different model families.
+```python
+llm = gym.LLM("Qwen/Qwen3-4B-Instruct-2507")
+```
+
+`llm` is the judge or the generator in `gym.run`. A judge and a generator from different model families are preferred.
 
 ## Usage
 
@@ -146,7 +135,9 @@ results/nfcorpus/
 - **Cost.** Two judge calls per query per model pair: 100 queries and 10 models is 9,000 calls.
 - **Reading back.** `gym.Result.from_disk(path)` for one run (`.leaderboard`, `.to_dataframe()`); `gym.load_results("results/")` for every run under a directory.
 
-**Agreement with MTEB.** For an MTEB task, compare the ranking with the official scores after the run. The labels never enter the pipeline; `queries="original"` isolates the judge from query generation.
+## Agreement with MTEB
+
+For an MTEB task, compare the ranking with the official scores after the run. The labels never enter the pipeline. `queries="original"` runs the same comparison on the dataset's own queries instead of generated ones.
 
 ```python
 result.agreement()  # one run
