@@ -20,7 +20,7 @@ pip install "mteb-gym @ git+https://github.com/embeddings-benchmark/MTEB-gym-v2"
 
 ## Quickstart
 
-The mock LLM needs no API key or GPU. It answers deterministically, so this checks the install and does not rank models. About a minute on a CPU.
+The mock LLM needs no API key or GPU. It answers deterministically, so this checks the install and does not rank models. The first run downloads a small dataset and MiniLM, then encodes on the CPU; allow a few minutes.
 
 ```python
 import mteb_gym as gym
