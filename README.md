@@ -94,10 +94,22 @@ export OPENAI_API_KEY=EMPTY
 ```
 
 ```python
+import mteb_gym as gym
+
 llm = gym.LLM("Qwen/Qwen3-4B-Instruct-2507")
+
+result = gym.run(
+    corpus="NFCorpus",
+    models=["mteb/baseline-bm25s", "BAAI/bge-base-en-v1.5", "intfloat/e5-base-v2"],
+    generator=llm,
+    judge=llm,
+    n_queries=100,
+    output_folder="results/nfcorpus",
+)
+print(result.leaderboard)
 ```
 
-`llm` is the judge or the generator in `gym.run`. A hosted provider such as OpenRouter, Together, Anthropic or Gemini works the same way with its URL and your key. A judge and a generator from different model families are preferred.
+A hosted provider such as OpenRouter, Together, Anthropic or Gemini works the same way with its URL and your key. A judge and a generator from different model families are preferred.
 
 ## Usage
 
