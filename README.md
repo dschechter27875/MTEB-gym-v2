@@ -65,52 +65,35 @@ mteb-gym --corpus NFCorpus \
 
 ## LLMs
 
-`gym.LLM(model, base_url=None, api_key=None)` talks to any OpenAI-compatible server. Without `base_url` it uses OpenAI and reads `OPENAI_API_KEY`. For a hosted provider such as OpenRouter, Together, Anthropic or Gemini, pass its URL and key:
+`gym.LLM(model)` talks to any OpenAI-compatible server. It reads `OPENAI_API_KEY` and `OPENAI_BASE_URL` like the openai SDK, so two exports point it at any server; `base_url` and `api_key` do the same in code.
 
-```python
-gym.LLM("<model>", base_url="<provider url>", api_key="<key>")
+```bash
+export OPENAI_BASE_URL=<server url>   # omit for OpenAI
+export OPENAI_API_KEY=<key>           # EMPTY for a server you run
 ```
 
-To serve an open model yourself, no key needed, start it with one of these.
+Hosted providers such as OpenRouter, Together, Anthropic and Gemini expose an OpenAI-compatible URL. To serve an open model yourself, start it with one of these; each serves `http://localhost:8000/v1`.
 
-vLLM:
+**vLLM**
 
 ```bash
 vllm serve Qwen/Qwen3-4B-Instruct-2507 --port 8000
 ```
 
-SGLang:
+**SGLang**
 
 ```bash
 python -m sglang.launch_server --model-path Qwen/Qwen3-4B-Instruct-2507 --port 8000
 ```
 
-transformers:
+**transformers**
 
 ```bash
 pip install "transformers[serving]"
 transformers serve --force-model Qwen/Qwen3-4B-Instruct-2507 --port 8000
 ```
 
-Then point `gym.LLM` at the server. One model can be both judge and generator.
-
-```python
-import mteb_gym as gym
-
-llm = gym.LLM("Qwen/Qwen3-4B-Instruct-2507", base_url="http://localhost:8000/v1")
-
-result = gym.run(
-    corpus="NFCorpus",
-    models=["mteb/baseline-bm25s", "BAAI/bge-base-en-v1.5", "intfloat/e5-base-v2"],
-    generator=llm,
-    judge=llm,
-    n_queries=100,
-    output_folder="results/nfcorpus",
-)
-print(result.leaderboard)
-```
-
-For an experiment, use a judge and a generator from different model families.
+Then `gym.LLM("Qwen/Qwen3-4B-Instruct-2507")` is the judge or the generator in `gym.run`. A judge and a generator from different model families are preferred.
 
 ## Usage
 
@@ -146,7 +129,9 @@ results/nfcorpus/
 - **Cost.** Two judge calls per query per model pair: 100 queries and 10 models is 9,000 calls.
 - **Reading back.** `gym.Result.from_disk(path)` for one run (`.leaderboard`, `.to_dataframe()`); `gym.load_results("results/")` for every run under a directory.
 
-**Agreement with MTEB.** For an MTEB task, compare the ranking with the official scores after the run. The labels never enter the pipeline; `queries="original"` isolates the judge from query generation.
+## Agreement with MTEB
+
+For an MTEB task, compare the ranking with the official scores after the run. The labels never enter the pipeline; `queries="original"` isolates the judge from query generation.
 
 ```python
 result.agreement()  # one run
