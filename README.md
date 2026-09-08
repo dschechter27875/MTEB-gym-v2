@@ -113,23 +113,13 @@ A hosted provider such as OpenRouter, Together, Anthropic or Gemini works the sa
 
 ## Usage
 
-```python
-gym.run(
-    corpus,  # MTEB task name, a folder of .txt/.md files, or a .jsonl with id and text
-    models,  # MTEB model ids, run through mteb itself
-    judge,  # gym.LLM(...)
-    generator=None,  # gym.LLM(...); None: the judge writes the queries
-    queries="synthetic",  # "original": the task's own queries; or a .jsonl, .txt or list of yours
-    task_description=None,  # what counts as a good result, one sentence; None: the task's mteb prompt
-    n_queries=100,  # generated queries
-    top_k=10,  # documents judged per query
-    seed=0,
-    filter_queries=True,  # LLM quality filter and deduplication
-    output_folder="results",
-    batch_size=32,  # encoding
-    workers=8,  # concurrent LLM calls
-)
-```
+`gym.run` takes the corpus, the models and the two LLMs, as in the Quickstart. The other options, with their defaults:
+
+- `queries="synthetic"`: `"original"` uses the task's own queries; your own go in as a `.jsonl` with `id` and `text`, a `.txt` with one per line, or a list of strings.
+- `task_description=None`: one sentence on what counts as a good result, given to generator and judge; by default the task's mteb prompt.
+- `n_queries=100`, `top_k=10` documents judged per query, `seed=0`, `filter_queries=True` for the LLM quality filter and deduplication, `output_folder="results"`, `batch_size=32`, `workers=8` concurrent LLM calls.
+
+`help(gym.run)` documents each one.
 
 Everything is written under `output_folder`. The record holds the ratings, the configuration and the diagnostics:
 
