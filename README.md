@@ -36,7 +36,7 @@ result = gym.run(
 print(result.leaderboard)
 ```
 
-With `OPENAI_API_KEY` set, `gym.LLM(model)` uses OpenAI.
+With `OPENAI_API_KEY` set, `gym.LLM(model)` uses OpenAI. Any other OpenAI-compatible provider, such as OpenRouter, Together, Anthropic or Gemini, works with its URL in `OPENAI_BASE_URL` and its key.
 
 ```bash
 export OPENAI_API_KEY=<your_api_key>
@@ -95,7 +95,7 @@ result = gym.run(
 print(result.leaderboard)
 ```
 
-SGLang and `transformers serve` expose the same endpoint. A hosted provider such as OpenRouter, Together, Anthropic or Gemini works the same way with its URL and your key. A judge and a generator from different model families are preferred.
+SGLang and `transformers serve` expose the same endpoint. A judge and a generator from different model families are preferred.
 
 ## Usage
 
