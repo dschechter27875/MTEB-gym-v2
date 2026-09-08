@@ -137,7 +137,7 @@ results/nfcorpus/
 
 ## Agreement with MTEB
 
-For an MTEB task, compare the ranking with the official scores after the run. The labels never enter the pipeline; `queries="original"` isolates the judge from query generation.
+For an MTEB task, compare the ranking with the official scores after the run. The labels never enter the pipeline. `queries="original"` runs the same comparison on the dataset's own queries instead of generated ones.
 
 ```python
 result.agreement()  # one run
