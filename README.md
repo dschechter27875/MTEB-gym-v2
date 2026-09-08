@@ -20,7 +20,7 @@ pip install "mteb-gym @ git+https://github.com/embeddings-benchmark/MTEB-gym-v2"
 
 ## Quickstart
 
-The mock judge needs no API key or GPU. It answers deterministically, so this checks the install and does not rank models. About a minute on a CPU.
+The mock LLM needs no API key or GPU. It answers deterministically, so this checks the install and does not rank models. About a minute on a CPU.
 
 ```python
 import mteb_gym as gym
@@ -28,6 +28,7 @@ import mteb_gym as gym
 result = gym.run(
     corpus="NanoNFCorpusRetrieval",
     models=["mteb/baseline-bm25s", "sentence-transformers/all-MiniLM-L6-v2"],
+    generator=gym.MockLLM(),
     judge=gym.MockLLM(),
     n_queries=20,
     output_folder="results/demo",
