@@ -66,23 +66,26 @@ mteb-gym --corpus NFCorpus \
 
 ## LLMs
 
-`gym.LLM` talks to any OpenAI-compatible server. To use an open model, install vLLM, SGLang or `transformers[serving]`, none of which the gym depends on, and start it. Each serves `http://localhost:8000/v1`.
+`gym.LLM` talks to any OpenAI-compatible server. To use an open model, start one with any of these; vLLM and SGLang need a GPU. None is a dependency of the gym, and each serves `http://localhost:8000/v1`.
 
 **vLLM**
 
 ```bash
+pip install vllm
 vllm serve Qwen/Qwen3-4B-Instruct-2507 --port 8000
 ```
 
 **SGLang**
 
 ```bash
+pip install "sglang[all]"
 python -m sglang.launch_server --model-path Qwen/Qwen3-4B-Instruct-2507 --port 8000
 ```
 
 **transformers**
 
 ```bash
+pip install "transformers[serving]"
 transformers serve --force-model Qwen/Qwen3-4B-Instruct-2507 --port 8000
 ```
 
