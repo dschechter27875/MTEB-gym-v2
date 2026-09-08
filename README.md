@@ -73,26 +73,23 @@ export OPENAI_BASE_URL=<server url>   # omit for OpenAI
 export OPENAI_API_KEY=<key>           # EMPTY for a server you run
 ```
 
-Hosted providers such as OpenRouter, Together, Anthropic and Gemini expose an OpenAI-compatible URL. To serve an open model yourself, install one of these engines and start it; each serves `http://localhost:8000/v1`. None of them is a dependency of the gym.
+Hosted providers such as OpenRouter, Together, Anthropic and Gemini expose an OpenAI-compatible URL. To serve an open model yourself, install vLLM, SGLang or `transformers[serving]`, none of which the gym depends on, and start it; each serves `http://localhost:8000/v1`.
 
 **vLLM**
 
 ```bash
-pip install vllm
 vllm serve Qwen/Qwen3-4B-Instruct-2507 --port 8000
 ```
 
 **SGLang**
 
 ```bash
-pip install "sglang[all]"
 python -m sglang.launch_server --model-path Qwen/Qwen3-4B-Instruct-2507 --port 8000
 ```
 
 **transformers**
 
 ```bash
-pip install "transformers[serving]"
 transformers serve --force-model Qwen/Qwen3-4B-Instruct-2507 --port 8000
 ```
 
