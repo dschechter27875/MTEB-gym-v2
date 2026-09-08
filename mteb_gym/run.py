@@ -130,14 +130,28 @@ def run(
     batch_size: int = 32,
     workers: int = 8,
 ) -> Result:
-    """Rank `models` on `corpus` (an mteb task name or a local path) with an LLM judge.
+    """Rank `models` on `corpus` with an LLM judge.
 
-    `judge` and `generator` are LLM clients (mteb_gym.LLM or MockLLM). `queries`: "synthetic" (the
-    generator writes them; defaults to the judge), "original" (the queries and labels the
-    dataset came with, for validation), or your own as a path / list. `task_description` is
-    one sentence on what counts as a good result, given to generator and judge; by
-    default the task's own mteb prompt. `batch_size` is the encode batch; `workers`
-    the concurrent LLM calls."""
+    Args:
+        corpus: An mteb retrieval task name, a folder of .txt/.md files, or a .jsonl with id and text.
+        models: mteb model ids. They run through mteb itself.
+        judge: An LLM client (mteb_gym.LLM or MockLLM) that compares the retrieved lists.
+        generator: An LLM client that writes the queries. Defaults to the judge.
+        queries: "synthetic" (generated), "original" (the dataset's own queries), or your own as a
+            .jsonl with id and text, a .txt with one query per line, or a list of strings.
+        task_description: One sentence on what counts as a good result, given to generator and judge.
+            Defaults to the task's mteb prompt.
+        n_queries: Queries to generate.
+        top_k: Documents judged per query.
+        seed: Seed for document sampling and the bootstrap.
+        filter_queries: LLM quality filter and deduplication of generated queries.
+        output_folder: Where queries, predictions, verdicts and the record are written.
+        batch_size: Encoding batch size.
+        workers: Concurrent LLM calls.
+
+    Returns:
+        The run's Result: leaderboard, record and path.
+    """
     started = time.time()
     out, models = Path(output_folder), list(models)
     if not models:
