@@ -36,7 +36,7 @@ result = gym.run(
 print(result.leaderboard)
 ```
 
-With `OPENAI_API_KEY` set, `gym.LLM(model)` uses OpenAI. Other servers are in the next section.
+With `OPENAI_API_KEY` set, `gym.LLM(model)` uses OpenAI.
 
 ```bash
 export OPENAI_API_KEY=<your_api_key>
